@@ -83,12 +83,25 @@ function highlightDivs(word, currentTabId) {
 
       // Filter for divs that match
       const divs = Array.from(document.querySelectorAll('div')); // Get all divs
-      const matches = divs.filter(div => div.innerHTML.includes(text)); // Filter by text content
+      const matches = divs.filter(div => div.textContent.includes(text)); // Filter by text content
 
-      // Highlight the divs that match
       matches.forEach(div => {
-        div.style.border = "2px solid red"
-      })
+        // Check if the div directly contains the text
+          if (!div.querySelector('div')){
+            // Highlight the div
+            div.style.border = "2px solid red";
+            console.log("Highlighted div:", div);
+  
+            // Highlight the parent div if it exists
+            if (div.parentElement && div.parentElement.tagName === "DIV") {
+              div.parentElement.style.border = "2px solid blue"; // Parent div gets a blue border
+              console.log("Highlighted parent div:", div.parentElement);
+            }
+    
+          }
+          
+
+      });
 
       console.log("Succesfully matched divs:", matches.length);
     },
