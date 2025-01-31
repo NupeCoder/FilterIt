@@ -26,12 +26,17 @@ function handleDivs(word, currentTabId, action) {
       console.log("Word passed:", text);
       console.log("Action type:", actionType);
 
+      // Filter for divs that match
+      const divs = Array.from(document.querySelectorAll("div")); // Get all divs
+      const regex = new RegExp(`\\b${text}\\b`, "i"); // Case-insensitive whole-word match
+      const matches = divs.filter(div => regex.test(div.textContent)); // Filter by text content
+
+      // Function to figure out the divs in close proximity
       function getDivsInProximity(selectedDiv) {
         const maxDistance = 55; // Adjustable
-        const divs = document.querySelectorAll("div");
         const selectedRect = selectedDiv.getBoundingClientRect();
 
-        return Array.from(divs).filter(div => {
+        return Array.from(matches).filter(div => {
           if (div === selectedDiv) return false; // Skip the selected div
 
           const rect = div.getBoundingClientRect();
@@ -44,9 +49,21 @@ function handleDivs(word, currentTabId, action) {
         });
       }
 
-      // Filter for divs that match
-      const divs = Array.from(document.querySelectorAll("div")); // Get all divs
-      const matches = divs.filter(div => div.textContent.includes(text)); // Filter by text content
+      function removeDivs() {
+        matches.forEach(div => {
+          // Check if the div directly contains the text
+          if (!div.querySelector("div")) {
+            const nearbyDivs = getDivsInProximity(div);
+            div.remove(); // Remove the div
+            nearbyDivs.forEach(nearbyDiv => {
+              nearbyDiv.remove(); // remove nearby divs
+            });
+            console.log("Removed div:", div);
+          }
+        });
+      }
+
+
 
       // Switch based on actionType
       switch (actionType) {
@@ -74,17 +91,37 @@ function handleDivs(word, currentTabId, action) {
           break;
 
         case "delete":
+          removeDivs();
+          // Set up a MutationObserver to watch for new divs
+
+          break;
+
+        case "hide":
+          
           matches.forEach(div => {
-            // Check if the div directly contains the text
             if (!div.querySelector("div")) {
-              const nearbyDivs = getDivsInProximity(div);
-              div.remove(); // Remove the div
-              nearbyDivs.forEach(nearbyDiv => {
-                nearbyDiv.remove(); // remove nearby divs
-              });
-              console.log("Removed div:", div);
+            const nearbyDivs = getDivsInProximity(div);
+            div.style.display = "none"; // Hide matching divs
+
+            nearbyDivs.forEach(nearbyDiv => {
+              nearbyDiv.style.display = "none"; // Highlight nearby divs
+            });
+            console.log("Hiding div:", div);
             }
+
+            const observer = new MutationObserver(mutations => {
+              mutations.forEach(mutation => {
+                mutation.addedNodes.forEach(node => {
+                  if (node.nodeType === 1 && node.tagName === "DIV" && node.textContent.includes(text)) {
+                    node.style.display = "none";
+                    console.log("MutationObserver hid new div:", node);
+                  }
+                });
+              });
+            });
+            observer.observe(document.body, { childList: true, subtree: true });
           });
+
           break;
 
         default:
@@ -93,6 +130,7 @@ function handleDivs(word, currentTabId, action) {
       }
 
       console.log("Successfully matched divs:", matches.length);
+      console.log(matches);
     },
     args: [word, action], // Pass the word and action type as arguments
   });
@@ -102,6 +140,7 @@ function handleDivs(word, currentTabId, action) {
 document.addEventListener("DOMContentLoaded", () => {
   const highlightButton = document.getElementById("highlight");
   const deleteButton = document.getElementById("delete");
+  const hideButton = document.getElementById("hide");
   const textBox = document.getElementById("keyword");
 
   // Main code for Highlighting
@@ -126,5 +165,17 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   } else {
     console.error("Could not find 'deleteButton' or 'textBox' in the DOM.");
+  }
+
+  // Main code for Deleting
+  if (hideButton && textBox) {
+    hideButton.addEventListener("click", () => {
+      const text = textBox.value;
+      chrome.runtime.sendMessage({ action: "hide", text: text });
+      findWord(text, "hide"); // Pass "delete" as the action
+      chrome.runtime.sendMessage({ action: "hide", text: "hidden div" });
+    });
+  } else {
+    console.error("Could not find 'hideButton' or 'textBox' in the DOM.");
   }
 });
