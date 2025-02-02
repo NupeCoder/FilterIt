@@ -49,22 +49,6 @@ function handleDivs(word, currentTabId, action) {
         });
       }
 
-      function removeDivs() {
-        matches.forEach(div => {
-          // Check if the div directly contains the text
-          if (!div.querySelector("div")) {
-            const nearbyDivs = getDivsInProximity(div);
-            div.remove(); // Remove the div
-            nearbyDivs.forEach(nearbyDiv => {
-              nearbyDiv.remove(); // remove nearby divs
-            });
-            console.log("Removed div:", div);
-          }
-        });
-      }
-
-
-
       // Switch based on actionType
       switch (actionType) {
 
@@ -90,11 +74,6 @@ function handleDivs(word, currentTabId, action) {
           });
           break;
 
-        case "delete":
-          removeDivs();
-          // Set up a MutationObserver to watch for new divs
-
-          break;
 
         case "hide":
           
@@ -139,7 +118,6 @@ function handleDivs(word, currentTabId, action) {
 // Main code for event handling
 document.addEventListener("DOMContentLoaded", () => {
   const highlightButton = document.getElementById("highlight");
-  const deleteButton = document.getElementById("delete");
   const hideButton = document.getElementById("hide");
   const textBox = document.getElementById("keyword");
 
@@ -155,19 +133,8 @@ document.addEventListener("DOMContentLoaded", () => {
     console.error("Could not find 'highlightButton' or 'textBox' in the DOM.");
   }
 
-  // Main code for Deleting
-  if (deleteButton && textBox) {
-    deleteButton.addEventListener("click", () => {
-      const text = textBox.value;
-      chrome.runtime.sendMessage({ action: "delete", text: text });
-      findWord(text, "delete"); // Pass "delete" as the action
-      chrome.runtime.sendMessage({ action: "delete", text: "deleted div" });
-    });
-  } else {
-    console.error("Could not find 'deleteButton' or 'textBox' in the DOM.");
-  }
 
-  // Main code for Deleting
+  // Main code for Hiding
   if (hideButton && textBox) {
     hideButton.addEventListener("click", () => {
       const text = textBox.value;
