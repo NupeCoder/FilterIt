@@ -11,7 +11,9 @@ async function findWord(word, action) {
       console.log("Action:", action);
 
       // Pass word and action to handleDivs
-      handleDivs(word, currentTab.id, action);
+      //handleDivs(word, currentTab.id, action);
+
+      observeNewContent(currentTab.id, word);
     } else {
       console.error("No active tab found.");
     }
@@ -48,6 +50,8 @@ function handleDivs(word, currentTabId, action) {
           return distance <= maxDistance; // Only include divs within maxDistance
         });
       }
+
+      
 
       // Switch based on actionType
       switch (actionType) {
@@ -112,6 +116,63 @@ function handleDivs(word, currentTabId, action) {
       console.log(matches);
     },
     args: [word, action], // Pass the word and action type as arguments
+  });
+}
+
+function observeNewContent(currentTabId, word) {
+  chrome.scripting.executeScript({
+    target: { tabId: currentTabId },
+    func: (text) => {
+      const regex = new RegExp(`\\b${text}\\b`, "i");
+
+
+      // Function to figure out the divs in close proximity
+      function highlightCloseDivs(selectedDiv) {
+        const maxDistance = 55; // Adjustable
+        const selectedRect = selectedDiv.getBoundingClientRect();
+
+        // Select all relevant elements (divs, spans, links, articles, etc.)
+        const elements = Array.from(document.querySelectorAll("div, span, a, article"));
+  
+        // Filter elements that are close to the selected div
+        elements.forEach(element => {
+          if (element === selectedDiv) return; // Skip the selected div itself
+
+          const rect = element.getBoundingClientRect();
+          const distance = Math.sqrt(
+            Math.pow(rect.left - selectedRect.left, 2) +
+            Math.pow(rect.top - selectedRect.top, 2)
+          );
+
+          if (distance <= maxDistance) {
+            element.style.border = '2px dashed green'; // Highlighting
+            console.log("highlighted nearby element: ", element);
+          } // Only include divs within maxDistance
+        });
+      }
+      
+      // Highlight function
+      function highlightText() {
+        const divs = Array.from(document.querySelectorAll("div"));
+        divs.forEach(div => {
+          if ( !div.querySelector("div") && regex.test(div.textContent) ) {
+            div.style.border = '2px solid red'; // Simple highlight
+            console.log("highlighted new div: ", div);
+            // highlightCloseDivs(div);
+            // console.log("highlighted nearby elements");
+
+          }
+        });
+      };
+
+      // Set up MutationObserver to monitor for changes in the DOM
+      const observer = new MutationObserver(highlightText);
+      observer.observe(document.body, { childList: true, subtree: true });
+
+      // Initially highlight any matching text
+      highlightText();
+    },
+    args: [word],
   });
 }
 
