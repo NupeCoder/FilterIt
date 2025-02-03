@@ -13,7 +13,7 @@ async function findWord(word, action) {
       // Pass word and action to handleDivs
       //handleDivs(word, currentTab.id, action);
 
-      observeNewContent(currentTab.id, word);
+      observeNewContent(currentTab.id, word, action);
     } else {
       console.error("No active tab found.");
     }
@@ -119,10 +119,10 @@ function handleDivs(word, currentTabId, action) {
   });
 }
 
-function observeNewContent(currentTabId, word) {
+function observeNewContent(currentTabId, word, action) {
   chrome.scripting.executeScript({
     target: { tabId: currentTabId },
-    func: (text) => {
+    func: (text, actionType) => {
       const regex = new RegExp(`\\b${text}\\b`, "i");
 
 
@@ -158,21 +158,51 @@ function observeNewContent(currentTabId, word) {
           if ( !div.querySelector("div") && regex.test(div.textContent) ) {
             div.style.border = '2px solid red'; // Simple highlight
             console.log("highlighted new div: ", div);
-            // highlightCloseDivs(div);
-            // console.log("highlighted nearby elements");
+            highlightCloseDivs(div);
+            console.log("highlighted nearby elements");
 
           }
         });
       };
 
-      // Set up MutationObserver to monitor for changes in the DOM
-      const observer = new MutationObserver(highlightText);
-      observer.observe(document.body, { childList: true, subtree: true });
+      // Highlight function
+      function hideDivs() {
+        const divs = Array.from(document.querySelectorAll("div"));
+        divs.forEach(div => {
+          if ( !div.querySelector("div") && regex.test(div.textContent) ) {
+            div.style.display = "none"
+            console.log("hid new div: ", div);
+            
 
-      // Initially highlight any matching text
-      highlightText();
+          }
+        });
+      };
+
+      switch (actionType) {
+        case "highlight":
+          // Set up MutationObserver to monitor for changes in the DOM
+          const highlightObserver = new MutationObserver(highlightText);
+          highlightObserver.observe(document.body, { childList: true, subtree: true });
+
+
+          // Initially highlight any matching text
+          highlightText();
+          break;
+
+        case "hide":
+          const hideObserver = new MutationObserver(hideDivs);
+          hideObserver.observe(document.body, { childList: true, subtree: true });
+
+
+          // Initially highlight any matching text
+          hideDivs();
+      
+        default:
+          break;
+      }
+
     },
-    args: [word],
+    args: [word, action],
   });
 }
 
