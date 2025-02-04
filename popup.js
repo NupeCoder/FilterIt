@@ -10,112 +10,12 @@ async function findWord(word, action) {
       console.log("Textbox Text:", word);
       console.log("Action:", action);
 
-      // Pass word and action to handleDivs
-      //handleDivs(word, currentTab.id, action);
-
+      // Pass word and action to observeNewContent
       observeNewContent(currentTab.id, word, action);
+
     } else {
       console.error("No active tab found.");
     }
-  });
-}
-
-// Function to Handle the Divs that contain the words we are looking for
-function handleDivs(word, currentTabId, action) {
-  chrome.scripting.executeScript({
-    target: { tabId: currentTabId },
-    func: (text, actionType) => {
-      console.log("Word passed:", text);
-      console.log("Action type:", actionType);
-
-      // Filter for divs that match
-      const divs = Array.from(document.querySelectorAll("div")); // Get all divs
-      const regex = new RegExp(`\\b${text}\\b`, "i"); // Case-insensitive whole-word match
-      const matches = divs.filter(div => regex.test(div.textContent)); // Filter by text content
-
-      // Function to figure out the divs in close proximity
-      function getDivsInProximity(selectedDiv) {
-        const maxDistance = 55; // Adjustable
-        const selectedRect = selectedDiv.getBoundingClientRect();
-
-        return Array.from(matches).filter(div => {
-          if (div === selectedDiv) return false; // Skip the selected div
-
-          const rect = div.getBoundingClientRect();
-          const distance = Math.sqrt(
-            Math.pow(rect.left - selectedRect.left, 2) +
-            Math.pow(rect.top - selectedRect.top, 2)
-          );
-
-          return distance <= maxDistance; // Only include divs within maxDistance
-        });
-      }
-
-      
-
-      // Switch based on actionType
-      switch (actionType) {
-
-        case "highlight":
-          matches.forEach(div => {
-            // Check if the div directly contains the text
-            if (!div.querySelector("div")) {
-              // Highlight the div
-              div.style.border = "2px solid red";
-              console.log("Highlighted div:", div);
-
-              const nearbyDivs = getDivsInProximity(div);
-              nearbyDivs.forEach(nearbyDiv => {
-                nearbyDiv.style.border = "2px dashed green"; // Highlight nearby divs
-              });
-
-              // Highlight the parent div if it exists
-              if (div.parentElement && div.parentElement.tagName === "DIV") {
-                div.parentElement.style.border = "2px solid blue"; // Parent div gets a blue border
-                console.log("Highlighted parent div:", div.parentElement);
-              }
-            }
-          });
-          break;
-
-
-        case "hide":
-          
-          matches.forEach(div => {
-            if (!div.querySelector("div")) {
-            const nearbyDivs = getDivsInProximity(div);
-            div.style.display = "none"; // Hide matching divs
-
-            nearbyDivs.forEach(nearbyDiv => {
-              nearbyDiv.style.display = "none"; // Highlight nearby divs
-            });
-            console.log("Hiding div:", div);
-            }
-
-            const observer = new MutationObserver(mutations => {
-              mutations.forEach(mutation => {
-                mutation.addedNodes.forEach(node => {
-                  if (node.nodeType === 1 && node.tagName === "DIV" && node.textContent.includes(text)) {
-                    node.style.display = "none";
-                    console.log("MutationObserver hid new div:", node);
-                  }
-                });
-              });
-            });
-            observer.observe(document.body, { childList: true, subtree: true });
-          });
-
-          break;
-
-        default:
-          console.error("Invalid action type:", actionType);
-          break;
-      }
-
-      console.log("Successfully matched divs:", matches.length);
-      console.log(matches);
-    },
-    args: [word, action], // Pass the word and action type as arguments
   });
 }
 
@@ -128,14 +28,16 @@ function observeNewContent(currentTabId, word, action) {
 
       // Function to figure out the divs in close proximity
       function highlightCloseDivs(selectedDiv) {
-        const maxDistance = 55; // Adjustable
+        const maxDistance = 53; // Adjustable
         const selectedRect = selectedDiv.getBoundingClientRect();
 
         // Select all relevant elements (divs, spans, links, articles, etc.)
-        const elements = Array.from(document.querySelectorAll("div, span, a, article"));
+        const elements = Array.from(document.querySelectorAll("div, span, a, article, img, p"));
+        const matches = elements.filter(div => regex.test(div.textContent)); // filter elements
+
   
         // Filter elements that are close to the selected div
-        elements.forEach(element => {
+        matches.forEach(element => {
           if (element === selectedDiv) return; // Skip the selected div itself
 
           const rect = element.getBoundingClientRect();
@@ -147,6 +49,32 @@ function observeNewContent(currentTabId, word, action) {
           if (distance <= maxDistance) {
             element.style.border = '2px dashed green'; // Highlighting
             console.log("highlighted nearby element: ", element);
+          } // Only include divs within maxDistance
+        });
+      }
+
+      function hideCloseDivs (selectedDiv) {
+        const maxDistance = 70; // Adjustable
+        const selectedRect = selectedDiv.getBoundingClientRect();
+
+        // Select all relevant elements (divs, spans, links, articles, etc.)
+        const elements = Array.from(document.querySelectorAll("div, span, a, article, img, p"));
+        const matches = elements.filter(div => regex.test(div.textContent)); // filter elements
+
+  
+        // Filter elements that are close to the selected div
+        matches.forEach(element => {
+          if (element === selectedDiv) return; // Skip the selected div itself
+
+          const rect = element.getBoundingClientRect();
+          const distance = Math.sqrt(
+            Math.pow(rect.left - selectedRect.left, 2) +
+            Math.pow(rect.top - selectedRect.top, 2)
+          );
+
+          if (distance <= maxDistance) {
+            element.style.visibility = "hidden";
+            console.log("hid nearby elements: ", element);
           } // Only include divs within maxDistance
         });
       }
@@ -170,8 +98,10 @@ function observeNewContent(currentTabId, word, action) {
         const divs = Array.from(document.querySelectorAll("div"));
         divs.forEach(div => {
           if ( !div.querySelector("div") && regex.test(div.textContent) ) {
-            div.style.display = "none"
+            div.style.visibility = "hidden";
             console.log("hid new div: ", div);
+            hideCloseDivs(div);
+            console.log("hid nearby elemnts");
             
 
           }
@@ -196,6 +126,7 @@ function observeNewContent(currentTabId, word, action) {
 
           // Initially highlight any matching text
           hideDivs();
+          break;
       
         default:
           break;
