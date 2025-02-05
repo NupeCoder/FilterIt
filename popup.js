@@ -145,10 +145,21 @@ document.addEventListener("DOMContentLoaded", () => {
   // Main code for Highlighting
   if (highlightButton && textBox) {
     highlightButton.addEventListener("click", () => {
-      const text = textBox.value;
-      chrome.runtime.sendMessage({ action: "highlight", text: text });
-      findWord(text, "highlight"); // Pass "highlight" as the action
-      chrome.runtime.sendMessage({ action: "highlight", text: "highlighted div" });
+      try {
+        const text = textBox.value.trim(); // Trim whitespace
+
+        if (!text) {
+            throw new Error("Textbox is empty! Please enter a word.");
+        }
+
+        chrome.runtime.sendMessage({ action: "highlight", text: text });
+        findWord(text, "highlight"); // Pass "highlight" as the action
+        chrome.runtime.sendMessage({ action: "highlight", text: "highlighted div" });
+
+    } catch (error) {
+        console.error(error.message);
+        alert(error.message); // Optional: Show an alert to the user
+      }
     });
   } else {
     console.error("Could not find 'highlightButton' or 'textBox' in the DOM.");
@@ -158,10 +169,21 @@ document.addEventListener("DOMContentLoaded", () => {
   // Main code for Hiding
   if (hideButton && textBox) {
     hideButton.addEventListener("click", () => {
-      const text = textBox.value;
-      chrome.runtime.sendMessage({ action: "hide", text: text });
-      findWord(text, "hide"); // Pass "delete" as the action
-      chrome.runtime.sendMessage({ action: "hide", text: "hidden div" });
+      try {
+        const text = textBox.value.trim(); // Trim whitespace
+
+        if (!text) {
+            throw new Error("Textbox is empty! Please enter a word.");
+        }
+
+        chrome.runtime.sendMessage({ action: "hide", text: text });
+        findWord(text, "hide"); // Pass "hide" as the action
+        chrome.runtime.sendMessage({ action: "hide", text: "hidden div" });
+
+    } catch (error) {
+        console.error(error.message);
+        alert(error.message); // Optional: Show an alert to the user
+      }
     });
   } else {
     console.error("Could not find 'hideButton' or 'textBox' in the DOM.");
