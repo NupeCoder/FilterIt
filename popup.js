@@ -23,8 +23,7 @@ function observeNewContent(currentTabId, word, action) {
   chrome.scripting.executeScript({
     target: { tabId: currentTabId },
     func: (text, actionType) => {
-      const regex = new RegExp(`\\b${text}\\b`, "i");
-
+      const regex = new RegExp(`${text}`, "i"); // Case-insensitive search, no word boundary
 
       // Function to figure out the divs in close proximity
       function highlightCloseDivs(selectedDiv) {
@@ -81,7 +80,7 @@ function observeNewContent(currentTabId, word, action) {
       
       // Highlight function
       function highlightText() {
-        const divs = Array.from(document.querySelectorAll("div"));
+        const divs = Array.from(document.querySelectorAll("div, span, a, article, img, p"));
         divs.forEach(div => {
           if ( !div.querySelector("div") && regex.test(div.textContent) ) {
             div.style.border = '2px solid red'; // Simple highlight
@@ -95,7 +94,7 @@ function observeNewContent(currentTabId, word, action) {
 
       // Highlight function
       function hideDivs() {
-        const divs = Array.from(document.querySelectorAll("div"));
+        const divs = Array.from(document.querySelectorAll("div, span, a, article, img, p"));
         divs.forEach(div => {
           if ( !div.querySelector("div") && regex.test(div.textContent) ) {
             div.style.visibility = "hidden";
