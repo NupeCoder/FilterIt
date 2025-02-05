@@ -158,7 +158,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     } catch (error) {
         console.error(error.message);
-        alert(error.message); // Optional: Show an alert to the user
+        alert(error.message); // Show an alert to the user
       }
     });
   } else {
@@ -182,7 +182,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     } catch (error) {
         console.error(error.message);
-        alert(error.message); // Optional: Show an alert to the user
+        alert(error.message); // Show an alert to the user
       }
     });
   } else {
