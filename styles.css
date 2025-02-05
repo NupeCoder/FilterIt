@@ -84,3 +84,20 @@ button:active {
     background: #b30000;
     box-shadow: 0 3px 8px rgba(255, 0, 0, 0.6);
 }
+
+/* Style for the Show Word List link */
+.toggle-link {
+    display: inline-block;
+    margin-left: 15px;
+    color: #ff4d4d; /* Red theme color */
+    font-weight: bold;
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.3s ease-in-out;
+}
+
+/* Change color on hover */
+.toggle-link:hover {
+    color: #cc0000; /* Darker red */
+    text-decoration: underline;
+}

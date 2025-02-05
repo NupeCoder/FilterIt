@@ -10,9 +10,17 @@
         <h1>Enter Your Keyword</h1>
         <input id="keyword" type="text" placeholder="Input Keyword...">
         <div class="button-group">
-            <button id="highlight">Highlight</button>
-            <button id="hide">Hide</button>
+            <button id="add">Add</button>
+        </div>
+        <br>
+        <div class="button_group">
+            <a href="#" id="toggle-list" class="toggle-link">Show Word List</a>
+        </div>
 
+        <!-- Hidden Word List -->
+        <div id="word-list-container" style="display: none;">
+            <h2>Word List</h2>
+            <ul id="word-list"></ul>
         </div>
     </div>
 

@@ -189,3 +189,58 @@ document.addEventListener("DOMContentLoaded", () => {
     console.error("Could not find 'hideButton' or 'textBox' in the DOM.");
   }
 });
+
+// WORD LIST CODE
+
+document.addEventListener("DOMContentLoaded", () => {
+  const addButton = document.getElementById("add");
+  const toggleListLink = document.getElementById("toggle-list");
+  const textBox = document.getElementById("keyword");
+  const wordListContainer = document.getElementById("word-list-container");
+  const wordList = document.getElementById("word-list");
+  
+  let words = new Set(); // Use a Set to prevent duplicates
+
+  // Function to add words to the list
+  addButton.addEventListener("click", () => {
+      try {
+          const text = textBox.value.trim(); // Remove extra spaces
+          if (!text) throw new Error("Textbox is empty! Please enter a word.");
+
+          if (!words.has(text)) {
+              words.add(text);
+              const li = document.createElement("li");
+              li.textContent = text;
+
+              // Add a delete button for each word
+              const deleteButton = document.createElement("button");
+              deleteButton.textContent = "X";
+              deleteButton.style.marginLeft = "10px";
+              deleteButton.addEventListener("click", () => {
+                  words.delete(text);
+                  li.remove();
+              });
+
+              li.appendChild(deleteButton);
+              wordList.appendChild(li);
+          }
+
+          textBox.value = ""; // Clear input after adding
+      } catch (error) {
+          console.error(error.message);
+          alert(error.message); // Optional alert for users
+      }
+  });
+
+  // Function to toggle word list visibility
+  toggleListLink.addEventListener("click", (event) => {
+      event.preventDefault(); // prevent from navigating
+      if (wordListContainer.style.display === "none") {
+          wordListContainer.style.display = "block";
+          toggleListButton.textContent = "Hide Word List";
+      } else {
+          wordListContainer.style.display = "none";
+          toggleListButton.textContent = "Show Word List";
+      }
+  });
+});
