@@ -210,10 +210,10 @@ document.addEventListener("DOMContentLoaded", () => {
     event.preventDefault(); // prevent from navigating
     if (wordListContainer.style.display === "none") {
       wordListContainer.style.display = "block";
-      toggleListButton.textContent = "Hide Word List";
+      toggleListLink.textContent = "Hide Word List";
     } else {
       wordListContainer.style.display = "none";
-      toggleListButton.textContent = "Show Word List";
+      toggleListLink.textContent = "Show Word List";
     }
   });
 
