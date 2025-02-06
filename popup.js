@@ -138,101 +138,74 @@ function observeNewContent(currentTabId, word, action) {
 
 // Main code for event handling
 document.addEventListener("DOMContentLoaded", () => {
-  const highlightButton = document.getElementById("highlight");
-  const hideButton = document.getElementById("hide");
+  const highlightToggle = document.getElementById("highlight-toggle");
+  const hideToggle = document.getElementById("hide-toggle");
   const textBox = document.getElementById("keyword");
-
-  // Main code for Highlighting
-  if (highlightButton && textBox) {
-    highlightButton.addEventListener("click", () => {
-      try {
-        const text = textBox.value.trim(); // Trim whitespace
-
-        if (!text) {
-            throw new Error("Textbox is empty! Please enter a word.");
-        }
-
-        chrome.runtime.sendMessage({ action: "highlight", text: text });
-        findWord(text, "highlight"); // Pass "highlight" as the action
-        chrome.runtime.sendMessage({ action: "highlight", text: "highlighted div" });
-
-    } catch (error) {
-        console.error(error.message);
-        alert(error.message); // Show an alert to the user
-      }
-    });
-  } else {
-    console.error("Could not find 'highlightButton' or 'textBox' in the DOM.");
-  }
-
-
-  // Main code for Hiding
-  if (hideButton && textBox) {
-    hideButton.addEventListener("click", () => {
-      try {
-        const text = textBox.value.trim(); // Trim whitespace
-
-        if (!text) {
-            throw new Error("Textbox is empty! Please enter a word.");
-        }
-
-        chrome.runtime.sendMessage({ action: "hide", text: text });
-        findWord(text, "hide"); // Pass "hide" as the action
-        chrome.runtime.sendMessage({ action: "hide", text: "hidden div" });
-
-    } catch (error) {
-        console.error(error.message);
-        alert(error.message); // Show an alert to the user
-      }
-    });
-  } else {
-    console.error("Could not find 'hideButton' or 'textBox' in the DOM.");
-  }
-});
-
-// WORD LIST CODE
-
-document.addEventListener("DOMContentLoaded", () => {
   const addButton = document.getElementById("add");
   const toggleListLink = document.getElementById("toggle-list");
-  const textBox = document.getElementById("keyword");
   const wordListContainer = document.getElementById("word-list-container");
   const wordList = document.getElementById("word-list");
   
   let words = new Set(); // Use a Set to prevent duplicates
+  let isHighlightActive = false;
+  let isHideActive = false;
+
+  // Function to update highlighting/hiding when toggles change
+  function applyFilters() {
+    words.forEach(word => {
+      if (isHighlightActive) {
+        findWord(word, "highlight");
+      }
+      if (isHideActive) {
+        findWord(word, "hide");
+      }
+    });
+  }
+
+  // Function to toggle highlighting
+  highlightToggle.addEventListener("change", () => {
+    isHighlightActive = highlightToggle.checked;
+    applyFilters();
+  });
+
+  // Function to toggle hiding
+  hideToggle.addEventListener("change", () => {
+    isHideActive = hideToggle.checked;
+    applyFilters();
+  });
 
   // Function to add words to the list
   addButton.addEventListener("click", () => {
-      try {
-          const text = textBox.value.trim(); // Remove extra spaces
-          if (!text) throw new Error("Textbox is empty! Please enter a word.");
+    try {
+        const text = textBox.value.trim(); // Remove extra spaces
+        if (!text) throw new Error("Textbox is empty! Please enter a word.");
 
-          if (!words.has(text)) {
-              words.add(text);
-              const li = document.createElement("li");
-              li.textContent = text;
+        if (!words.has(text)) {
+            words.add(text);
+            const li = document.createElement("li");
+            li.textContent = text;
 
-              // Add a delete button for each word
-              const deleteButton = document.createElement("button");
-              deleteButton.textContent = "X";
-              deleteButton.style.marginLeft = "10px";
-              deleteButton.addEventListener("click", () => {
-                  words.delete(text);
-                  li.remove();
-              });
+            // Add a delete button for each word
+            const deleteButton = document.createElement("button");
+            deleteButton.textContent = "X";
+            deleteButton.style.marginLeft = "10px";
+            deleteButton.addEventListener("click", () => {
+                words.delete(text);
+                li.remove();
+            });
 
-              li.appendChild(deleteButton);
-              wordList.appendChild(li);
-          }
+            li.appendChild(deleteButton);
+            wordList.appendChild(li);
+        }
 
-          textBox.value = ""; // Clear input after adding
-      } catch (error) {
-          console.error(error.message);
-          alert(error.message); // Optional alert for users
-      }
+        textBox.value = ""; // Clear input after adding
+    } catch (error) {
+        console.error(error.message);
+        alert(error.message); // Optional alert for users
+    }
   });
 
-  // Function to toggle word list visibility
+// Function to toggle word list visibility
   toggleListLink.addEventListener("click", (event) => {
       event.preventDefault(); // prevent from navigating
       if (wordListContainer.style.display === "none") {
@@ -243,4 +216,5 @@ document.addEventListener("DOMContentLoaded", () => {
           toggleListButton.textContent = "Show Word List";
       }
   });
+
 });
