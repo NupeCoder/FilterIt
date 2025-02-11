@@ -78,7 +78,7 @@ function resetContent(currentTabId, word, action) {
         const selectedRect = selectedElement.getBoundingClientRect();
 
         // Select all relevant elements (divs, spans, links, articles, etc.)
-        const elements = Array.from(document.querySelectorAll("div, span, a, article, img, p"));
+        const elements = Array.from(document.querySelectorAll("div, span, a, article, img, p, svg"));
         console.log("all tagged elements:", elements);
         const matches = elements.filter(div => regex.test(div.textContent)); // filter elements
 
@@ -167,7 +167,7 @@ function observeNewContent(currentTabId, word, action) {
         const selectedRect = selectedDiv.getBoundingClientRect();
 
         // Select all relevant elements (divs, spans, links, articles, etc.)
-        const elements = Array.from(document.querySelectorAll("div, span, a, article, img, p"));
+        const elements = Array.from(document.querySelectorAll("div, span, a, article, img, p, svg"));
         const matches = elements.filter(div => regex.test(div.textContent)); // filter elements
 
   
@@ -194,7 +194,7 @@ function observeNewContent(currentTabId, word, action) {
         const selectedRect = selectedDiv.getBoundingClientRect();
 
         // Select all relevant elements (divs, spans, links, articles, etc.)
-        const elements = Array.from(document.querySelectorAll("div, span, a, article, img, p"));
+        const elements = Array.from(document.querySelectorAll("*"));
         const matches = elements.filter(div => regex.test(div.textContent)); // filter elements
 
   
@@ -217,7 +217,7 @@ function observeNewContent(currentTabId, word, action) {
       
       // Highlight function
       function highlightText() {
-        const elements = Array.from(document.querySelectorAll("div, span, a, article, img, p"));
+        const elements = Array.from(document.querySelectorAll("div, span, a, article, img, p, svg"));
         elements.forEach(element => {
           if ( !element.querySelector("div") && regex.test(element.textContent) ) {
             element.style.border = '2px solid red'; // Simple highlight
