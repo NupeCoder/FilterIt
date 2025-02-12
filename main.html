@@ -10,13 +10,13 @@
         <h1>Enter Your Keyword</h1>
         <input id="keyword" type="text" placeholder="Input Keyword...">
         <div class="button-group">
-            <button id="add">Add</button>
+            <button id="addWord">Add</button>
         </div>
         <br>
         
         <div class="switch-container">
             <label class="switch">
-                <input type="checkbox" id="highlight-toggle">
+                <input type="checkbox" id="highlightSwitch">
                 <span class="slider round"></span>
             </label>
             <span class="switch-label">Enable Highlight</span>
@@ -24,7 +24,7 @@
         
         <div class="switch-container">
             <label class="switch">
-                <input type="checkbox" id="hide-toggle">
+                <input type="checkbox" id="hideSwitch">
                 <span class="slider round"></span>
             </label>
             <span class="switch-label">Enable Hide</span>
@@ -37,7 +37,7 @@
         <!-- Hidden Word List -->
         <div id="word-list-container" style="display: none;">
             <h2>Word List</h2>
-            <ul id="word-list"></ul>
+            <ul id="wordList"></ul>
         </div>
     </div>
 
