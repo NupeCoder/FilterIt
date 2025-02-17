@@ -12,6 +12,10 @@ body {
     align-items: center;
 }
 
+#Title {
+    color: dodgerblue;
+}
+
 /* Containers */
 .container {
     width: 80%; /* Adjust width to center content */
@@ -168,4 +172,49 @@ input:checked + .slider:before {
     font-size: 14px;
     color: rgb(255, 255, 255);
     font-weight: bold;
+}
+
+.help-container {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    display: inline-block;
+}
+
+#help-btn {
+    text-align: center;
+    justify-content: center;
+    background-color: #55d4ff;
+    background: none;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+#help-btn:hover {
+    background-color: #20c0ed;
+}
+
+.help-text {
+    display: none;
+    position: absolute;
+    top: 40px;
+    right: 0;
+    background-color: white;
+    color: black;
+    padding: 10px;
+    border: 1px solid #ccc;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    width: 250px;
+    z-index: 100;
+}
+
+.help-container:hover .help-text {
+    display: block;
 }

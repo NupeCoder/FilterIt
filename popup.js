@@ -1,6 +1,7 @@
 // Define variables
-let hideObserver = null;
-let highlightObserver = null;
+let hideObservers = new Map();
+let highlightObservers = new Map();
+let blurObservers = new Map();
 let words = new Set(); // Use a Set to prevent duplicates
 let isHighlightActive = false;
 let isHideActive = false;
@@ -52,7 +53,7 @@ function resetContent(currentTabId, word, action) {
       }
 
       function undoHighlightClose(selectedElement) {
-        const maxDistance = 60; // Adjustable
+        const maxDistance = 53; // Adjustable
         const selectedRect = selectedElement.getBoundingClientRect();
 
         // Select all relevant elements (divs, spans, links, articles, etc.)
@@ -133,8 +134,7 @@ function resetContent(currentTabId, word, action) {
       }
 
       function undoBlur() {
-        blurObserver.disconnect(); // Disconnect the observer
-        blurObserver = null; // Reset the observer reference
+        blurObservers.get(text).disconnect(); // Disconnect the observer
 
 
         const elements = Array.from(document.querySelectorAll("*")).filter( el => 
@@ -151,8 +151,7 @@ function resetContent(currentTabId, word, action) {
 
       function undoHighlight() {
 
-        highlightObserver.disconnect(); // Disconnect the observer
-        highlightObserver = null; // Reset the observer reference
+        highlightObservers.get(text).disconnect(); // Disconnect the observer        highlightObserver = null; // Reset the observer reference
 
 
         const elements = Array.from(document.querySelectorAll("[filterit-tag]"));
@@ -167,8 +166,7 @@ function resetContent(currentTabId, word, action) {
 
       function undoHide() {
         
-        hideObserver.disconnect(); // Disconnect the observer
-        hideObserver = null; // Reset the observer reference
+        hideObservers.get(text).disconnect(); // Disconnect the observer
 
 
         const elements = Array.from(document.querySelectorAll("*")).filter( el => 
@@ -215,7 +213,7 @@ function observeNewContent(currentTabId, word, action) {
 
       // Function to figure out the divs in close proximity
       function highlightCloseDivs(selectedDiv) {
-        const maxDistance = 60; // Adjustable
+        const maxDistance = 53; // Adjustable
         const selectedRect = selectedDiv.getBoundingClientRect();
 
         // Select all relevant elements (divs, spans, links, articles, etc.)
@@ -342,28 +340,50 @@ function observeNewContent(currentTabId, word, action) {
       switch (actionType) {
         case "highlight":
           // Set up MutationObserver to monitor for changes in the DOM
-          highlightObserver = new MutationObserver(highlightText);
-          highlightObserver.observe(document.body, { childList: true, subtree: true });
-
-
-          // Initially highlight any matching text
-          highlightText();
+          if (!highlightObservers.has(text)) {
+            const observer = new MutationObserver(highlightText);
+            highlightObservers.set(text, observer);
+          }
+          // Activate the observer if the toggle is on
+          chrome.storage.local.get(["highlightEnabled"], (data) => {
+            if (data.highlightEnabled) {
+              console.log("HIGHLIGHT IS ACTIVE");
+              highlightObservers.get(text).observe(document.body, { childList: true, subtree: true });
+              highlightText(); // Initially hide any matching text
+            }
+          });
           break;
 
         case "hide":
-          hideObserver = new MutationObserver(hideDivs);
-          hideObserver.observe(document.body, { childList: true, subtree: true });
-
-
-          // Initially hide any matching text
-          hideDivs();
+          if (!hideObservers.has(text)) {
+            const observer = new MutationObserver(hideDivs);
+            hideObservers.set(text, observer);
+          }
+          // Activate the observer if the toggle is on
+          chrome.storage.local.get(["hideEnabled"], (data) => {
+            if (data.hideEnabled) {
+              console.log("HIDE IS ACTIVE");
+              hideObservers.get(text).observe(document.body, { childList: true, subtree: true });
+              hideDivs(); // Initially hide any matching text
+            }
+          });
+          
           break;
 
         case "blur":
-          blurObserver = new MutationObserver(blurDivs);
-          blurObserver.observe(document.body, { childList: true, subtree: true });
-
-          blurDivs();
+          // Set up MutationObserver to monitor for changes in the DOM
+          if (!blurObservers.has(text)) {
+            const observer = new MutationObserver(blurDivs);
+            blurObservers.set(text, observer);
+          }
+          // Activate the observer if the toggle is on
+          chrome.storage.local.get(["blurEnabled"], (data) => {
+            if (data.blurEnabled) {
+              console.log("BLUR IS ACTIVE");
+              blurObservers.get(text).observe(document.body, { childList: true, subtree: true });
+              blurDivs(); // Initially hide any matching text
+            }
+          });
           break;
       
         default:
@@ -446,11 +466,6 @@ document.addEventListener("DOMContentLoaded", () => {
         wordList.appendChild(listElement);
         });
     }
-  
-    let words = new Set(); // Use a Set to prevent duplicates
-    let isHighlightActive = false;
-    let isHideActive = false;
-    let isBlurActive = false;
 
     function removeWord(word) {
         // remove 1 word from the list
