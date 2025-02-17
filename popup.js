@@ -4,6 +4,7 @@ let highlightObserver = null;
 let words = new Set(); // Use a Set to prevent duplicates
 let isHighlightActive = false;
 let isHideActive = false;
+let isBlurActive = false;
 
 // Find target word from input textbox
 async function findWord(word, action, reset=false) {
@@ -43,7 +44,8 @@ function resetContent(currentTabId, word, action) {
         element.style.visibility = "";  // Reset visibility
         element.style.display = "";  // Reset display if it was changed
         element.style.border = "";  // Reset border if it was changed
-        //element.style.cssText = "";  // Clear ALL inline styles
+        // element.style.cssText = "";  // Clear ALL inline styles
+        element.style.filter = "";
         element.removeAttribute("filterit-tag"); // Remove the custom tag
   
         console.log("Reset element:", element);
@@ -102,6 +104,50 @@ function resetContent(currentTabId, word, action) {
         });
       }
 
+      function undoBlurClose(selectedElement) {
+
+        const maxDistance = 53; // Adjustable
+        console.log(selectedElement);
+        const selectedRect = selectedElement.getBoundingClientRect();
+
+        // Select all relevant elements (divs, spans, links, articles, etc.)
+        const elements = Array.from(document.querySelectorAll("div, span, a, article, img, p"));
+        console.log("all tagged elements:", elements);
+        const matches = elements.filter(div => regex.test(div.textContent)); // filter elements
+
+  
+        // Filter elements that are close to the selected div
+        matches.forEach(element => {
+          if (element === selectedElement) return; // Skip the selected div itself
+
+          const rect = element.getBoundingClientRect();
+          const distance = Math.sqrt(
+            Math.pow(rect.left - selectedRect.left, 2) +
+            Math.pow(rect.top - selectedRect.top, 2)
+          );
+
+          if (distance <= maxDistance) {
+            resetChanges(element);
+          } // Only include divs within maxDistance
+        });
+      }
+
+      function undoBlur() {
+        blurObserver.disconnect(); // Disconnect the observer
+        blurObserver = null; // Reset the observer reference
+
+
+        const elements = Array.from(document.querySelectorAll("*")).filter( el => 
+          getComputedStyle(el).filter === "blur(5px)"
+        );
+        elements.forEach(element => {
+          if ( !element.querySelector("div") && regex.test(element.textContent) ) {
+            resetChanges(element);
+            undoBlurClose(element);
+          }
+        });
+      }
+
 
       function undoHighlight() {
 
@@ -120,14 +166,14 @@ function resetContent(currentTabId, word, action) {
       }
 
       function undoHide() {
-
+        
         hideObserver.disconnect(); // Disconnect the observer
         hideObserver = null; // Reset the observer reference
 
 
         const elements = Array.from(document.querySelectorAll("*")).filter( el => 
           getComputedStyle(el).visibility === "hidden"
-      );
+        );
         console.log("all hidden elements:", elements);
         elements.forEach(element => {
           if ( !element.querySelector("div") && regex.test(element.textContent) ) {
@@ -146,6 +192,9 @@ function resetContent(currentTabId, word, action) {
         case "hide":
           undoHide();
           break;
+
+        case "blur":
+          undoBlur();
       
         default:
           break;
@@ -213,7 +262,35 @@ function observeNewContent(currentTabId, word, action) {
 
           if (distance <= maxDistance) {
             element.style.visibility = "hidden";
+            element.setAttribute("filterIt-tag", "true");
             console.log("hid nearby elements: ", element);
+          } // Only include divs within maxDistance
+        });
+      }
+
+      function blurCloseDivs(selectedDiv) {
+        const maxDistance = 53; // Adjustable
+        const selectedRect = selectedDiv.getBoundingClientRect();
+
+        // Select all relevant elements (divs, spans, links, articles, etc.)
+        const elements = Array.from(document.querySelectorAll("div, span, a, article, img, p"));
+        const matches = elements.filter(div => regex.test(div.textContent)); // filter elements
+
+  
+        // Filter elements that are close to the selected div
+        matches.forEach(element => {
+          if (element === selectedDiv) return; // Skip the selected div itself
+
+          const rect = element.getBoundingClientRect();
+          const distance = Math.sqrt(
+            Math.pow(rect.left - selectedRect.left, 2) +
+            Math.pow(rect.top - selectedRect.top, 2)
+          );
+
+          if (distance <= maxDistance) {
+            element.style.filter = "blur(5px)";
+            element.setAttribute("filterIt-tag", "true");
+            console.log("blurred nearby elements: ", element);
           } // Only include divs within maxDistance
         });
       }
@@ -248,6 +325,20 @@ function observeNewContent(currentTabId, word, action) {
         });
       };
 
+      function blurDivs() {
+        const elements = Array.from(document.querySelectorAll("div, span, a, article, img, p"));
+        elements.forEach(element => {
+          if ( !element.querySelector("div") && regex.test(element.textContent) ) {
+            element.style.filter = "blur(5px)";
+            console.log("blurred new div: ", element);
+            blurCloseDivs(element);
+            console.log("blurred nearby elemnts");
+            
+
+          }
+        });
+      };
+
       switch (actionType) {
         case "highlight":
           // Set up MutationObserver to monitor for changes in the DOM
@@ -267,6 +358,13 @@ function observeNewContent(currentTabId, word, action) {
           // Initially hide any matching text
           hideDivs();
           break;
+
+        case "blur":
+          blurObserver = new MutationObserver(blurDivs);
+          blurObserver.observe(document.body, { childList: true, subtree: true });
+
+          blurDivs();
+          break;
       
         default:
           break;
@@ -281,6 +379,7 @@ function observeNewContent(currentTabId, word, action) {
 document.addEventListener("DOMContentLoaded", () => {
     const highlightToggle = document.getElementById("highlight-toggle");
     const hideToggle = document.getElementById("hide-toggle");
+    const blurToggle = document.getElementById("blur-toggle");
     const textBox = document.getElementById("keyword");
     const addButton = document.getElementById("add");
     const toggleListLink = document.getElementById("toggle-list");
@@ -292,13 +391,14 @@ document.addEventListener("DOMContentLoaded", () => {
         chrome.storage.local.set({
         words: Array.from(words),
         highlightEnabled: isHighlightActive,
-        hideEnabled: isHideActive
+        hideEnabled: isHideActive,
+        blurEnabled: isBlurActive
         });
     }
 
     // Function to load saved words and toggle states
     function loadSettings() {
-        chrome.storage.local.get(["words", "highlightEnabled", "hideEnabled"], (data) => {
+        chrome.storage.local.get(["words", "highlightEnabled", "hideEnabled", "blurEnabled"], (data) => {
         if (data.words) {
             words = new Set(data.words);
             updateWordListUI();
@@ -311,10 +411,17 @@ document.addEventListener("DOMContentLoaded", () => {
             isHideActive = data.hideEnabled;
             hideToggle.checked = isHideActive;
         }
+
+        if (typeof data.blurEnabled === "boolean" && words.size > 0) {
+          isBlurActive = data.blurEnabled;
+          blurToggle.checked = isBlurActive;
+      }
     
         // Apply highlighting/hiding immediately if toggled on
         if (isHighlightActive) applyHighlight();
         if (isHideActive) applyHide();
+        if (isBlurActive) applyBlur();
+
         });
     }
 
@@ -343,11 +450,13 @@ document.addEventListener("DOMContentLoaded", () => {
     let words = new Set(); // Use a Set to prevent duplicates
     let isHighlightActive = false;
     let isHideActive = false;
+    let isBlurActive = false;
 
     function removeWord(word) {
         // remove 1 word from the list
         findWord(word, "highlight", true);
         findWord(word, "hide", true);
+        findWord(word, "blur", true);
 
     }
 
@@ -382,16 +491,31 @@ document.addEventListener("DOMContentLoaded", () => {
 
     }
 
+  function applyBlur() {
+
+    if (isBlurActive) {
+      words.forEach(word => {
+        findWord(word, "blur");
+    })
+    
+    }else{
+    words.forEach(word => {
+        findWord(word, "blur", true);
+    })
+    
+    }
+  }
+
     // Function to toggle highlighting
     highlightToggle.addEventListener("change", () => {
         isHighlightActive = highlightToggle.checked;
         saveSettings(); // Save state
         if (isHighlightActive){
-        applyHighlight();
-        console.log("switch checked: ", isHighlightActive);
+            applyHighlight();
+            console.log("switch checked: ", isHighlightActive);
         } else {
             words.forEach(word => findWord(word, "highlight", true));
-        console.log("unchecked switch");
+            console.log("unchecked switch");
         }
         
     });
@@ -402,12 +526,27 @@ document.addEventListener("DOMContentLoaded", () => {
         saveSettings(); // Save state
         console.log("switch checked: ", isHideActive);
         if (isHideActive){
-        applyHide();
+            applyHide();
         } else {
-        words.forEach(word => findWord(word, "hide", true));
-        console.log("unchecked switch");
+            words.forEach(word => findWord(word, "hide", true));
+            console.log("unchecked switch");
         }
     });
+
+    // Function to toggle highlighting
+    blurToggle.addEventListener("change", () => {
+      isBlurActive = blurToggle.checked;
+      saveSettings(); // Save state
+      if (isBlurActive){
+          applyBlur();
+          console.log("switch checked: ", isBlurActive);
+      } else {
+          words.forEach(word => findWord(word, "blur", true));
+          console.log("unchecked switch");
+      }
+      
+  });
+
 
     // Function to add words to the list
     addButton.addEventListener("click", () => {
@@ -416,9 +555,9 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!text) throw new Error("Textbox is empty! Please enter a word.");
         
             if (!words.has(text)) {
-            words.add(text);
-            updateWordListUI();
-            saveSettings(); // Save words
+                words.add(text);
+                updateWordListUI();
+                saveSettings(); // Save words
         
             // Apply highlight or hide immediately if toggled on
             if (isHighlightActive) findWord(text, "highlight");
