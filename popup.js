@@ -413,20 +413,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
     }
 
-  function applyBlur() {
+    function applyBlur() {
 
-    if (isBlurActive) {
+      if (isBlurActive) {
+        words.forEach(word => {
+          findWord(word, "blur");
+      })
+      
+      }else{
       words.forEach(word => {
-        findWord(word, "blur");
-    })
-    
-    }else{
-    words.forEach(word => {
-        findWord(word, "blur", true);
-    })
-    
+          findWord(word, "blur", true);
+      })
+      
+      }
     }
-  }
 
     // Function to toggle highlighting
     highlightToggle.addEventListener("change", () => {
@@ -467,7 +467,7 @@ document.addEventListener("DOMContentLoaded", () => {
           console.log("unchecked switch");
       }
       
-  });
+    });
 
 
     // Function to add words to the list
