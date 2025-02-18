@@ -82,7 +82,8 @@ function resetContent(currentTabId, word, action) {
                 resetChanges(element);
                 undoClose(element);
               }
-            });            break;
+            });
+            break;
   
           case "hide":
             elements = Array.from(document.querySelectorAll("*")).filter(el =>
@@ -94,7 +95,8 @@ function resetContent(currentTabId, word, action) {
                 resetChanges(element);
                 undoClose(element);
               }
-            });            break;
+            });
+            break;
   
           case "blur":
             elements = Array.from(document.querySelectorAll("*")).filter(el =>
