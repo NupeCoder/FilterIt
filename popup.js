@@ -10,7 +10,7 @@ let hideObservers = new Map();
 let blurObservers = new Map();
 
 // Find target word from input textbox
-async function findWord(word, action, reset=false) {
+function findWord(word, action, reset=false) {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     if (tabs.length > 0) {
       const currentTab = tabs[0]; // The current active tab
@@ -157,9 +157,10 @@ function observeNewContent(currentTabId, word, action) {
 
         // Select all relevant elements (divs, spans, links, articles, etc.)
         const elements = Array.from(document.querySelectorAll("div, span, a, article, img, p, svg"));
+        const matches = elements.filter(div => regex.test(div.textContent)); // filter elements
 
         // Filter elements that are close to the selected div
-        elements.forEach(element => {
+        matches.forEach(element => {
           if (element === selectedElement) return; // Skip the selected div itself
 
           const rect = element.getBoundingClientRect();
