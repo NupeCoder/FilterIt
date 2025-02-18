@@ -79,6 +79,7 @@ function resetContent(currentTabId, word, action) {
         let elements = null;
         switch (action) {
           case "highlight":
+            highlightObservers.get(text).disconnect();
             elements = Array.from(document.querySelectorAll("[filterit-tag]"));
             elements.forEach(element => {
               if (!element.querySelector("div") && regex.test(element.textContent)) {
@@ -89,6 +90,7 @@ function resetContent(currentTabId, word, action) {
             break;
   
           case "hide":
+            hideObservers.get(text).disconnect();
             elements = Array.from(document.querySelectorAll("*")).filter(el =>
               getComputedStyle(el).visibility === "hidden"
             );
@@ -102,6 +104,7 @@ function resetContent(currentTabId, word, action) {
             break;
   
           case "blur":
+            blurObservers.get(text).disconnect();
             elements = Array.from(document.querySelectorAll("*")).filter(el =>
               getComputedStyle(el).filter === "blur(5px)"
             );
@@ -157,7 +160,7 @@ function observeNewContent(currentTabId, word, action) {
 
         // Filter elements that are close to the selected div
         elements.forEach(element => {
-          if (element === selectedDiv) return; // Skip the selected div itself
+          if (element === selectedElement) return; // Skip the selected div itself
 
           const rect = element.getBoundingClientRect();
           const distance = Math.sqrt(
@@ -203,7 +206,7 @@ function observeNewContent(currentTabId, word, action) {
                 element.style.border = '2px solid red'; // Simple highlight
                 element.setAttribute("filterIt-tag", "true");
                 console.log("highlighted new div: ", element);
-                highlightCloseDivs(element);
+                filterCloseElements(element, "highlight");
                 console.log("highlighted nearby elements");
 
               }
@@ -216,7 +219,7 @@ function observeNewContent(currentTabId, word, action) {
               if ( !element.querySelector("div") && regex.test(element.textContent) ) {
                 element.style.visibility = "hidden";
                 console.log("hid new div: ", element);
-                hideCloseDivs(element);
+                filterCloseElements(element, "hide");
                 console.log("hid nearby elemnts");
               }
             });
@@ -228,7 +231,7 @@ function observeNewContent(currentTabId, word, action) {
               if ( !element.querySelector("div") && regex.test(element.textContent) ) {
                 element.style.filter = "blur(5px)";
                 console.log("blurred new div: ", element);
-                blurCloseDivs(element);
+                filterCloseElements(element, "blur");
                 console.log("blurred nearby elemnts");
                 
               }
@@ -245,7 +248,7 @@ function observeNewContent(currentTabId, word, action) {
         case "highlight":
           // Set up MutationObserver to monitor for changes in the DOM
           if (!highlightObservers.has(text)) {
-            const observer = new MutationObserver(highlightText);
+            const observer = new MutationObserver(() => filterContent("highlight"));
             highlightObservers.set(text, observer);
           }
           // Activate the observer if the toggle is on
@@ -260,7 +263,7 @@ function observeNewContent(currentTabId, word, action) {
 
         case "hide":
           if (!hideObservers.has(text)) {
-            const observer = new MutationObserver(hideDivs);
+            const observer = new MutationObserver(() => filterContent("hide"));
             hideObservers.set(text, observer);
           }
           // Activate the observer if the toggle is on
@@ -268,7 +271,7 @@ function observeNewContent(currentTabId, word, action) {
             if (data.hideEnabled) {
               console.log("HIDE IS ACTIVE");
               hideObservers.get(text).observe(document.body, { childList: true, subtree: true });
-              filterContent(hide); // Initially hide any matching text
+              filterContent("hide"); // Initially hide any matching text
             }
           });
           
@@ -277,7 +280,7 @@ function observeNewContent(currentTabId, word, action) {
         case "blur":
           // Set up MutationObserver to monitor for changes in the DOM
           if (!blurObservers.has(text)) {
-            const observer = new MutationObserver(blurDivs);
+            const observer = new MutationObserver(() => filterContent("blur"));
             blurObservers.set(text, observer);
           }
           // Activate the observer if the toggle is on
