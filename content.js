@@ -50,16 +50,14 @@ function resetContent(currentTabId, word, action) {
         console.log("Reset element:", element);
       }
 
-      function undoHighlightClose(selectedElement) {
+      function undoClose(selectedElement) {
         const maxDistance = 60; // Adjustable
         const selectedRect = selectedElement.getBoundingClientRect();
 
         // Select all relevant elements (divs, spans, links, articles, etc.)
         const elements = Array.from(document.querySelectorAll("[filterit-tag]"));
-        const matches = elements.filter(div => regex.test(div.textContent)); // filter elements
 
-        // Filter elements that are close to the selected div
-        matches.forEach(element => {
+        elements.forEach(element => {
           if (element === selectedElement) return; // Skip the selected div itself
 
           const rect = element.getBoundingClientRect();
@@ -71,107 +69,61 @@ function resetContent(currentTabId, word, action) {
           if (distance <= maxDistance) {
             resetChanges(element);
           } // Only include divs within maxDistance
-        });
+        })
       }
 
-      function undoHideClose(selectedElement) {
-        const maxDistance = 53; // Adjustable
-        console.log(selectedElement);
-        const selectedRect = selectedElement.getBoundingClientRect();
-
-        // Select all relevant elements (divs, spans, links, articles, etc.)
-        const elements = Array.from(document.querySelectorAll("div, span, a, article, img, p"));
-        console.log("all tagged elements:", elements);
-        const matches = elements.filter(div => regex.test(div.textContent)); // filter elements
-
-        // Filter elements that are close to the selected div
-        matches.forEach(element => {
-          if (element === selectedElement) return; // Skip the selected div itself
-
-          const rect = element.getBoundingClientRect();
-          const distance = Math.sqrt(
-            Math.pow(rect.left - selectedRect.left, 2) +
-            Math.pow(rect.top - selectedRect.top, 2)
-          );
-
-          if (distance <= maxDistance) {
-            resetChanges(element);
-          } // Only include divs within maxDistance
-        });
-      }
-
-      function undoBlurClose(selectedElement) {
-        const maxDistance = 53; // Adjustable
-        console.log(selectedElement);
-        const selectedRect = selectedElement.getBoundingClientRect();
-
-        // Select all relevant elements (divs, spans, links, articles, etc.)
-        const elements = Array.from(document.querySelectorAll("div, span, a, article, img, p"));
-        console.log("all tagged elements:", elements);
-        const matches = elements.filter(div => regex.test(div.textContent)); // filter elements
-
-        // Filter elements that are close to the selected div
-        matches.forEach(element => {
-          if (element === selectedElement) return; // Skip the selected div itself
-
-          const rect = element.getBoundingClientRect();
-          const distance = Math.sqrt(
-            Math.pow(rect.left - selectedRect.left, 2) +
-            Math.pow(rect.top - selectedRect.top, 2)
-          );
-
-          if (distance <= maxDistance) {
-            resetChanges(element);
-          } // Only include divs within maxDistance
-        });
-      }
-
-      function undoBlur() {
-        const elements = Array.from(document.querySelectorAll("*")).filter(el =>
-          getComputedStyle(el).filter === "blur(5px)"
-        );
-        elements.forEach(element => {
-          if (!element.querySelector("div") && regex.test(element.textContent)) {
-            resetChanges(element);
-            undoBlurClose(element);
-          }
-        });
-      }
-
-      function undoHighlight() {
-        const elements = Array.from(document.querySelectorAll("[filterit-tag]"));
-        elements.forEach(element => {
-          if (!element.querySelector("div") && regex.test(element.textContent)) {
-            resetChanges(element);
-            undoHighlightClose(element);
-          }
-        });
-      }
-
-      function undoHide() {
-        const elements = Array.from(document.querySelectorAll("*")).filter(el =>
-          getComputedStyle(el).visibility === "hidden"
-        );
-        console.log("all hidden elements:", elements);
-        elements.forEach(element => {
-          if (!element.querySelector("div") && regex.test(element.textContent)) {
-            resetChanges(element);
-            undoHideClose(element);
-          }
-        });
+      function undoFilter (action) {
+        let elements = null;
+        switch (action) {
+          case "highlight":
+            elements = Array.from(document.querySelectorAll("[filterit-tag]"));
+            elements.forEach(element => {
+              if (!element.querySelector("div") && regex.test(element.textContent)) {
+                resetChanges(element);
+                undoClose(element);
+              }
+            });            break;
+  
+          case "hide":
+            elements = Array.from(document.querySelectorAll("*")).filter(el =>
+              getComputedStyle(el).visibility === "hidden"
+            );
+            console.log("all hidden elements:", elements);
+            elements.forEach(element => {
+              if (!element.querySelector("div") && regex.test(element.textContent)) {
+                resetChanges(element);
+                undoClose(element);
+              }
+            });            break;
+  
+          case "blur":
+            elements = Array.from(document.querySelectorAll("*")).filter(el =>
+              getComputedStyle(el).filter === "blur(5px)"
+            );
+            elements.forEach(element => {
+              if (!element.querySelector("div") && regex.test(element.textContent)) {
+                resetChanges(element);
+                undoClose(element);
+              }
+            });
+            break;
+  
+          default:
+            break;
+        }
       }
 
       switch (actionType) {
         case "highlight":
-          undoHighlight();
+          undoFilter("highlight");
           break;
 
         case "hide":
-          undoHide();
+          undoFilter("hide");
           break;
 
         case "blur":
-          undoBlur();
+          undoFilter("blur");
           break;
 
         default:
@@ -189,17 +141,16 @@ function observeNewContent(currentTabId, word, action) {
     func: (text, actionType) => {
       const regex = new RegExp(`${text}`, "i"); // Case-insensitive search, no word boundary
 
-      // Function to figure out the divs in close proximity
-      function highlightCloseDivs(selectedDiv) {
+
+      function filterCloseElements(selectedElement, action) {
         const maxDistance = 60; // Adjustable
-        const selectedRect = selectedDiv.getBoundingClientRect();
+        const selectedRect = selectedElement.getBoundingClientRect();
 
         // Select all relevant elements (divs, spans, links, articles, etc.)
         const elements = Array.from(document.querySelectorAll("div, span, a, article, img, p, svg"));
-        const matches = elements.filter(div => regex.test(div.textContent)); // filter elements
 
         // Filter elements that are close to the selected div
-        matches.forEach(element => {
+        elements.forEach(element => {
           if (element === selectedDiv) return; // Skip the selected div itself
 
           const rect = element.getBoundingClientRect();
@@ -209,61 +160,29 @@ function observeNewContent(currentTabId, word, action) {
           );
 
           if (distance <= maxDistance) {
-            element.style.border = '2px dashed green'; // Highlighting
-            element.setAttribute("filterIt-tag", "true");
-            console.log("highlighted nearby element: ", element);
-          } // Only include divs within maxDistance
-        });
-      }
+            switch(action) {
+              case "blur":
+                element.style.filter = "blur(5px)";
+                element.setAttribute("filterIt-tag", "true");
+                console.log("blurred nearby elements: ", element);
+                break;
 
-      function hideCloseDivs(selectedDiv) {
-        const maxDistance = 53; // Adjustable
-        const selectedRect = selectedDiv.getBoundingClientRect();
+              case "hide":
+                element.style.visibility = "hidden";
+                element.setAttribute("filterIt-tag", "true");
+                console.log("hid nearby elements: ", element);
+                break;
 
-        // Select all relevant elements (divs, spans, links, articles, etc.)
-        const elements = Array.from(document.querySelectorAll("div, span, a, article, img, p"));
-        const matches = elements.filter(div => regex.test(div.textContent)); // filter elements
+              case "highlight":
+                element.style.border = '2px dashed green'; // Highlighting
+                element.setAttribute("filterIt-tag", "true");
+                console.log("highlighted nearby element: ", element);
+                break;
 
-        // Filter elements that are close to the selected div
-        matches.forEach(element => {
-          if (element === selectedDiv) return; // Skip the selected div itself
-
-          const rect = element.getBoundingClientRect();
-          const distance = Math.sqrt(
-            Math.pow(rect.left - selectedRect.left, 2) +
-            Math.pow(rect.top - selectedRect.top, 2)
-          );
-
-          if (distance <= maxDistance) {
-            element.style.visibility = "hidden";
-            element.setAttribute("filterIt-tag", "true");
-            console.log("hid nearby elements: ", element);
-          } // Only include divs within maxDistance
-        });
-      }
-
-      function blurCloseDivs(selectedDiv) {
-        const maxDistance = 53; // Adjustable
-        const selectedRect = selectedDiv.getBoundingClientRect();
-
-        // Select all relevant elements (divs, spans, links, articles, etc.)
-        const elements = Array.from(document.querySelectorAll("div, span, a, article, img, p"));
-        const matches = elements.filter(div => regex.test(div.textContent)); // filter elements
-
-        // Filter elements that are close to the selected div
-        matches.forEach(element => {
-          if (element === selectedDiv) return; // Skip the selected div itself
-
-          const rect = element.getBoundingClientRect();
-          const distance = Math.sqrt(
-            Math.pow(rect.left - selectedRect.left, 2) +
-            Math.pow(rect.top - selectedRect.top, 2)
-          );
-
-          if (distance <= maxDistance) {
-            element.style.filter = "blur(5px)";
-            element.setAttribute("filterIt-tag", "true");
-            console.log("blurred nearby elements: ", element);
+              default:
+                break;
+            }
+            
           } // Only include divs within maxDistance
         });
       }
@@ -276,7 +195,7 @@ function observeNewContent(currentTabId, word, action) {
             element.style.border = '2px solid red'; // Simple highlight
             element.setAttribute("filterIt-tag", "true");
             console.log("highlighted new div: ", element);
-            highlightCloseDivs(element);
+            filterCloseElements(element, "highlight");
             console.log("highlighted nearby elements");
           }
         });
@@ -289,7 +208,7 @@ function observeNewContent(currentTabId, word, action) {
           if (!element.querySelector("div") && regex.test(element.textContent)) {
             element.style.visibility = "hidden";
             console.log("hid new div: ", element);
-            hideCloseDivs(element);
+            filterCloseElements(element, "hide");
             console.log("hid nearby elements");
           }
         });
@@ -301,7 +220,7 @@ function observeNewContent(currentTabId, word, action) {
           if (!element.querySelector("div") && regex.test(element.textContent)) {
             element.style.filter = "blur(5px)";
             console.log("blurred new div: ", element);
-            blurCloseDivs(element);
+            filterCloseElements(element, "blur");
             console.log("blurred nearby elements");
           }
         });
