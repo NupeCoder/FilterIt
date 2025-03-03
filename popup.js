@@ -313,6 +313,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const toggleListLink = document.getElementById("toggle-list");
   const wordListContainer = document.getElementById("word-list-container");
   const wordList = document.getElementById("word-list");
+  const clearAllButton = document.getElementById("clear-all-btn");
 
   // Function to save words and toggle states
   function saveSettings() {
@@ -422,6 +423,9 @@ document.addEventListener("DOMContentLoaded", () => {
           listElement.appendChild(deleteButton);
           wordList.appendChild(listElement);
       });
+      
+      // Show/hide the Clear All button based on whether there are words
+      clearAllButton.style.display = words.size > 0 ? "block" : "none";
   }
 
   function removeWord(word) {
@@ -477,6 +481,32 @@ document.addEventListener("DOMContentLoaded", () => {
       });
   }
 
+  // Function to clear all words
+  function clearAllWords() {
+      if (words.size === 0) {
+          alert("Word list is already empty!");
+          return;
+      }
+      
+      // Confirm before clearing all words
+      if (confirm("Are you sure you want to remove all words from your list?")) {
+          // Remove all effects for all words
+          clearAllEffects();
+          
+          // Clear the words set
+          words.clear();
+          
+          // Update UI
+          updateWordListUI();
+          
+          // Save the empty list
+          saveSettings();
+          
+          // Show success message
+          alert("All words have been removed from your list.");
+      }
+  }
+
   // Function to toggle highlighting
   highlightToggle.addEventListener("change", () => {
       if (highlightToggle.checked) {
@@ -522,14 +552,23 @@ document.addEventListener("DOMContentLoaded", () => {
               if (isHighlightActive) findWord(text, "highlight");
               if (isHideActive) findWord(text, "hide");
               if (isBlurActive) findWord(text, "blur");
+              
+              // Show success alert
+              alert(`"${text}" has been added to your word list.`);
+          } else {
+              // Word already exists alert
+              alert(`"${text}" is already in your word list.`);
           }
       
           textBox.value = ""; // Clear input after adding
       } catch (error) {
           console.error(error.message);
-          alert(error.message); // Optional alert for users
+          alert(error.message); // Alert for errors
       }
   });
+
+  // Add event listener for clearing all words
+  clearAllButton.addEventListener("click", clearAllWords);
 
   // Function to toggle word list visibility
   toggleListLink.addEventListener("click", (event) => {
