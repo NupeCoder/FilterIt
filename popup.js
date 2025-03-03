@@ -305,207 +305,243 @@ function observeNewContent(currentTabId, word, action) {
 
 // Main code for event handling
 document.addEventListener("DOMContentLoaded", () => {
-    const highlightToggle = document.getElementById("highlight-toggle");
-    const hideToggle = document.getElementById("hide-toggle");
-    const blurToggle = document.getElementById("blur-toggle");
-    const textBox = document.getElementById("keyword");
-    const addButton = document.getElementById("add");
-    const toggleListLink = document.getElementById("toggle-list");
-    const wordListContainer = document.getElementById("word-list-container");
-    const wordList = document.getElementById("word-list");
+  const highlightToggle = document.getElementById("highlight-toggle");
+  const hideToggle = document.getElementById("hide-toggle");
+  const blurToggle = document.getElementById("blur-toggle");
+  const textBox = document.getElementById("keyword");
+  const addButton = document.getElementById("add");
+  const toggleListLink = document.getElementById("toggle-list");
+  const wordListContainer = document.getElementById("word-list-container");
+  const wordList = document.getElementById("word-list");
 
   // Function to save words and toggle states
-    function saveSettings() {
-        chrome.storage.local.set({
-        words: Array.from(words),
-        highlightEnabled: isHighlightActive,
-        hideEnabled: isHideActive,
-        blurEnabled: isBlurActive
-        });
-    }
+  function saveSettings() {
+      chrome.storage.local.set({
+          words: Array.from(words),
+          highlightEnabled: isHighlightActive,
+          hideEnabled: isHideActive,
+          blurEnabled: isBlurActive
+      });
+  }
 
-    // Function to load saved words and toggle states
-    function loadSettings() {
-        chrome.storage.local.get(["words", "highlightEnabled", "hideEnabled", "blurEnabled"], (data) => {
-        if (data.words) {
-            words = new Set(data.words);
-            updateWordListUI();
-        }
-        if (typeof data.highlightEnabled === "boolean" && words.size > 0 ) {
-            isHighlightActive = data.highlightEnabled;
-            highlightToggle.checked = isHighlightActive;
-        }
-        if (typeof data.hideEnabled === "boolean" && words.size > 0) {
-            isHideActive = data.hideEnabled;
-            hideToggle.checked = isHideActive;
-        }
-
-        if (typeof data.blurEnabled === "boolean" && words.size > 0) {
-          isBlurActive = data.blurEnabled;
-          blurToggle.checked = isBlurActive;
-      }
-    
-        // Apply highlighting/hiding immediately if toggled on
-        if (isHighlightActive) applyHighlight();
-        if (isHideActive) applyHide();
-        if (isBlurActive) applyBlur();
-
-        });
-    }
-
-    function updateWordListUI() {
-        wordList.innerHTML = ""; // Clear list before repopulating
-        words.forEach(word => {
-        const listElement = document.createElement("li");
-        listElement.textContent = word;
-    
-        // Add a delete button for each word
-        const deleteButton = document.createElement("button");
-        deleteButton.textContent = "X";
-        deleteButton.style.marginLeft = "10px";
-        deleteButton.addEventListener("click", () => {
-            removeWord(word);
-            words.delete(word);
-            listElement.remove();
-            saveSettings(); // Save changes
-        });
-    
-        listElement.appendChild(deleteButton);
-        wordList.appendChild(listElement);
-        });
-    }
-
-    function removeWord(word) {
-        // remove 1 word from the list
-        findWord(word, "highlight", true);
-        findWord(word, "hide", true);
-        findWord(word, "blur", true);
-
-    }
-
-    // Function to update highlighting/hiding when toggles change
-    function applyHighlight() {
-        
-        if (isHighlightActive) {
-        words.forEach(word => {
-            findWord(word, "highlight");
-        })
-        
-        }else{
-        words.forEach(word => {
-            findWord(word, "highlight", true);
-        })
-        }
-
-    }
-
-    function applyHide() {
-        
-        if (isHideActive) {
-        words.forEach(word => {
-            findWord(word, "hide");
-        })
-        
-        }else{
-        words.forEach(word => {
-            findWord(word, "hide", true);
-        })
-        }
-
-    }
-
-    function applyBlur() {
-
-      if (isBlurActive) {
-        words.forEach(word => {
-          findWord(word, "blur");
-      })
+  // Function to load saved words and toggle states
+  function loadSettings() {
+      chrome.storage.local.get(["words", "highlightEnabled", "hideEnabled", "blurEnabled"], (data) => {
+          if (data.words) {
+              words = new Set(data.words);
+              updateWordListUI();
+          }
+          
+          // Reset all toggle states first
+          isHighlightActive = false;
+          isHideActive = false;
+          isBlurActive = false;
+          
+          // Only set one toggle as active based on saved settings
+          if (data.highlightEnabled && words.size > 0) {
+              isHighlightActive = true;
+              setActiveToggle("highlight");
+          } else if (data.hideEnabled && words.size > 0) {
+              isHideActive = true;
+              setActiveToggle("hide");
+          } else if (data.blurEnabled && words.size > 0) {
+              isBlurActive = true;
+              setActiveToggle("blur");
+          } else {
+              // Update UI to reflect no active toggles
+              highlightToggle.checked = false;
+              hideToggle.checked = false;
+              blurToggle.checked = false;
+          }
       
-      }else{
+          // Apply active effect if any
+          if (isHighlightActive) applyHighlight();
+          if (isHideActive) applyHide();
+          if (isBlurActive) applyBlur();
+      });
+  }
+
+  // Function to set the active toggle and turn off all others
+  function setActiveToggle(activeName) {
+      // First, clear all effects
+      clearAllEffects();
+      
+      // Reset all toggle states and UI
+      isHighlightActive = false;
+      isHideActive = false;
+      isBlurActive = false;
+      highlightToggle.checked = false;
+      hideToggle.checked = false;
+      blurToggle.checked = false;
+      
+      // Set the specified toggle as active
+      switch (activeName) {
+          case "highlight":
+              isHighlightActive = true;
+              highlightToggle.checked = true;
+              applyHighlight();
+              break;
+          case "hide":
+              isHideActive = true;
+              hideToggle.checked = true;
+              applyHide();
+              break;
+          case "blur":
+              isBlurActive = true;
+              blurToggle.checked = true;
+              applyBlur();
+              break;
+          case "none":
+              // All toggles remain off
+              break;
+          default:
+              console.error("Unknown toggle name:", activeName);
+      }
+      
+      // Save the new settings
+      saveSettings();
+  }
+
+  function updateWordListUI() {
+      wordList.innerHTML = ""; // Clear list before repopulating
       words.forEach(word => {
-          findWord(word, "blur", true);
-      })
+          const listElement = document.createElement("li");
+          listElement.textContent = word;
       
-      }
-    }
+          // Add a delete button for each word
+          const deleteButton = document.createElement("button");
+          deleteButton.textContent = "X";
+          deleteButton.style.marginLeft = "10px";
+          deleteButton.addEventListener("click", () => {
+              removeWord(word);
+              words.delete(word);
+              listElement.remove();
+              saveSettings(); // Save changes
+          });
+      
+          listElement.appendChild(deleteButton);
+          wordList.appendChild(listElement);
+      });
+  }
 
-    // Function to toggle highlighting
-    highlightToggle.addEventListener("change", () => {
-        isHighlightActive = highlightToggle.checked;
-        saveSettings(); // Save state
-        if (isHighlightActive){
-            applyHighlight();
-            console.log("switch checked: ", isHighlightActive);
-        } else {
-            words.forEach(word => findWord(word, "highlight", true));
-            console.log("unchecked switch");
-        }
-        
-    });
+  function removeWord(word) {
+      // remove 1 word from the list
+      findWord(word, "highlight", true);
+      findWord(word, "hide", true);
+      findWord(word, "blur", true);
+  }
 
-    // Function to toggle hiding
-    hideToggle.addEventListener("change", () => {
-        isHideActive = hideToggle.checked;
-        saveSettings(); // Save state
-        console.log("switch checked: ", isHideActive);
-        if (isHideActive){
-            applyHide();
-        } else {
-            words.forEach(word => findWord(word, "hide", true));
-            console.log("unchecked switch");
-        }
-    });
-
-    // Function to toggle highlighting
-    blurToggle.addEventListener("change", () => {
-      isBlurActive = blurToggle.checked;
-      saveSettings(); // Save state
-      if (isBlurActive){
-          applyBlur();
-          console.log("switch checked: ", isBlurActive);
+  // Function to update highlighting/hiding when toggles change
+  function applyHighlight() {
+      if (isHighlightActive) {
+          words.forEach(word => {
+              findWord(word, "highlight");
+          });
       } else {
-          words.forEach(word => findWord(word, "blur", true));
-          console.log("unchecked switch");
+          words.forEach(word => {
+              findWord(word, "highlight", true);
+          });
       }
+  }
+
+  function applyHide() {
+      if (isHideActive) {
+          words.forEach(word => {
+              findWord(word, "hide");
+          });
+      } else {
+          words.forEach(word => {
+              findWord(word, "hide", true);
+          });
+      }
+  }
+
+  function applyBlur() {
+      if (isBlurActive) {
+          words.forEach(word => {
+              findWord(word, "blur");
+          });
+      } else {
+          words.forEach(word => {
+              findWord(word, "blur", true);
+          });
+      }
+  }
+
+  // Function to clear all effects
+  function clearAllEffects() {
+      words.forEach(word => {
+          findWord(word, "highlight", true);
+          findWord(word, "hide", true);
+          findWord(word, "blur", true);
+      });
+  }
+
+  // Function to toggle highlighting
+  highlightToggle.addEventListener("change", () => {
+      if (highlightToggle.checked) {
+          setActiveToggle("highlight");
+      } else {
+          setActiveToggle("none");
+      }
+      console.log("Highlight active:", isHighlightActive);
+  });
+
+  // Function to toggle hiding
+  hideToggle.addEventListener("change", () => {
+      if (hideToggle.checked) {
+          setActiveToggle("hide");
+      } else {
+          setActiveToggle("none");
+      }
+      console.log("Hide active:", isHideActive);
+  });
+
+  // Function to toggle blurring
+  blurToggle.addEventListener("change", () => {
+      if (blurToggle.checked) {
+          setActiveToggle("blur");
+      } else {
+          setActiveToggle("none");
+      }
+      console.log("Blur active:", isBlurActive);
+  });
+
+  // Function to add words to the list
+  addButton.addEventListener("click", () => {
+      try {
+          const text = textBox.value.trim(); // Remove extra spaces
+          if (!text) throw new Error("Textbox is empty! Please enter a word.");
       
-    });
+          if (!words.has(text)) {
+              words.add(text);
+              updateWordListUI();
+              saveSettings(); // Save words
+      
+              // Apply current active effect if any
+              if (isHighlightActive) findWord(text, "highlight");
+              if (isHideActive) findWord(text, "hide");
+              if (isBlurActive) findWord(text, "blur");
+          }
+      
+          textBox.value = ""; // Clear input after adding
+      } catch (error) {
+          console.error(error.message);
+          alert(error.message); // Optional alert for users
+      }
+  });
 
+  // Function to toggle word list visibility
+  toggleListLink.addEventListener("click", (event) => {
+      event.preventDefault(); // prevent from navigating
+      if (wordListContainer.style.display === "none") {
+          wordListContainer.style.display = "block";
+          toggleListLink.textContent = "Hide Word List";
+      } else {
+          wordListContainer.style.display = "none";
+          toggleListLink.textContent = "Show Word List";
+      }
+  });
 
-    // Function to add words to the list
-    addButton.addEventListener("click", () => {
-        try {
-            const text = textBox.value.trim(); // Remove extra spaces
-            if (!text) throw new Error("Textbox is empty! Please enter a word.");
-        
-            if (!words.has(text)) {
-                words.add(text);
-                updateWordListUI();
-                saveSettings(); // Save words
-        
-            // Apply highlight or hide immediately if toggled on
-            if (isHighlightActive) findWord(text, "highlight");
-            if (isHideActive) findWord(text, "hide");
-            }
-        
-            textBox.value = ""; // Clear input after adding
-        } catch (error) {
-            console.error(error.message);
-            alert(error.message); // Optional alert for users
-        }
-    });
-
-    // Function to toggle word list visibility
-    toggleListLink.addEventListener("click", (event) => {
-        event.preventDefault(); // prevent from navigating
-        if (wordListContainer.style.display === "none") {
-        wordListContainer.style.display = "block";
-        toggleListLink.textContent = "Hide Word List";
-        } else {
-        wordListContainer.style.display = "none";
-        toggleListLink.textContent = "Show Word List";
-        }
-    });
-
-    loadSettings()
-
+  loadSettings();
 });
