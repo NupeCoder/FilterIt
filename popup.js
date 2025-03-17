@@ -54,7 +54,7 @@ function resetContent(currentTabId, word, action) {
       }
 
       function undoClose(selectedElement) {
-        const maxDistance = 60; // Adjustable
+        const maxDistance = 65; // Adjustable
         const selectedRect = selectedElement.getBoundingClientRect();
 
         // Select all relevant elements (divs, spans, links, articles, etc.)
@@ -152,7 +152,7 @@ function observeNewContent(currentTabId, word, action) {
       const regex = new RegExp(`${text}`, "i"); // Case-insensitive search, no word boundary
 
       function filterCloseElements(selectedElement, action) {
-        const maxDistance = 60; // Adjustable
+        const maxDistance = 65; // Adjustable
         const selectedRect = selectedElement.getBoundingClientRect();
 
         // Select all relevant elements (divs, spans, links, articles, etc.)
