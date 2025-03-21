@@ -1,11 +1,9 @@
 // Define variables
 let words = new Set(); // Use a Set to prevent duplicates
-let isHighlightActive = false;
 let isHideActive = false;
 let isBlurActive = false;
 
 // Store observers for each word
-let highlightObservers = new Map();
 let hideObservers = new Map();
 let blurObservers = new Map();
 
@@ -78,16 +76,6 @@ function resetContent(currentTabId, word, action) {
       function undoFilter (action) {
         let elements = null;
         switch (action) {
-          case "highlight":
-            highlightObservers.get(text).disconnect();
-            elements = Array.from(document.querySelectorAll("[filterit-tag]"));
-            elements.forEach(element => {
-              if (!element.querySelector("div") && regex.test(element.textContent)) {
-                resetChanges(element);
-                undoClose(element);
-              }
-            });
-            break;
   
           case "hide":
             hideObservers.get(text).disconnect();
@@ -122,9 +110,6 @@ function resetContent(currentTabId, word, action) {
       }
 
       switch (actionType) {
-        case "highlight":
-          undoFilter("highlight");
-          break;
 
         case "hide":
           undoFilter("hide");
@@ -183,12 +168,6 @@ function observeNewContent(currentTabId, word, action) {
                 console.log("hid nearby elements: ", element);
                 break;
 
-              case "highlight":
-                element.style.border = '2px dashed green'; // Highlighting
-                element.setAttribute("filterIt-tag", "true");
-                console.log("highlighted nearby element: ", element);
-                break;
-
               default:
                 break;
             }
@@ -200,19 +179,6 @@ function observeNewContent(currentTabId, word, action) {
       function filterContent(action) {
         let elements = null;
         switch (action) {
-          case "highlight":
-            elements = Array.from(document.querySelectorAll("div, span, a, article, img, p"));
-            elements.forEach(element => {
-              if ( !element.querySelector("div") && regex.test(element.textContent) ) {
-                element.style.border = '2px solid red'; // Simple highlight
-                element.setAttribute("filterIt-tag", "true");
-                console.log("highlighted new div: ", element);
-                filterCloseElements(element, "highlight");
-                console.log("highlighted nearby elements");
-
-              }
-            });
-            break;
   
           case "hide":
             elements = Array.from(document.querySelectorAll("div, span, a, article, img, p"));
@@ -246,21 +212,6 @@ function observeNewContent(currentTabId, word, action) {
       }
 
       switch (actionType) {
-        case "highlight":
-          // Set up MutationObserver to monitor for changes in the DOM
-          if (!highlightObservers.has(text)) {
-            const observer = new MutationObserver(() => filterContent("highlight"));
-            highlightObservers.set(text, observer);
-          }
-          // Activate the observer if the toggle is on
-          chrome.storage.local.get(["highlightEnabled"], (data) => {
-            if (data.highlightEnabled) {
-              console.log("HIGHLIGHT IS ACTIVE");
-              highlightObservers.get(text).observe(document.body, { childList: true, subtree: true });
-              filterContent("highlight"); // Initially hide any matching text
-            }
-          });
-          break;
 
         case "hide":
           if (!hideObservers.has(text)) {
@@ -305,7 +256,6 @@ function observeNewContent(currentTabId, word, action) {
 
 // Main code for event handling
 document.addEventListener("DOMContentLoaded", () => {
-  const highlightToggle = document.getElementById("highlight-toggle");
   const hideToggle = document.getElementById("hide-toggle");
   const blurToggle = document.getElementById("blur-toggle");
   const textBox = document.getElementById("keyword");
@@ -319,7 +269,6 @@ document.addEventListener("DOMContentLoaded", () => {
   function saveSettings() {
       chrome.storage.local.set({
           words: Array.from(words),
-          highlightEnabled: isHighlightActive,
           hideEnabled: isHideActive,
           blurEnabled: isBlurActive
       });
@@ -327,22 +276,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Function to load saved words and toggle states
   function loadSettings() {
-      chrome.storage.local.get(["words", "highlightEnabled", "hideEnabled", "blurEnabled"], (data) => {
+      chrome.storage.local.get(["words", "hideEnabled", "blurEnabled"], (data) => {
           if (data.words) {
               words = new Set(data.words);
               updateWordListUI();
           }
           
           // Reset all toggle states first
-          isHighlightActive = false;
           isHideActive = false;
           isBlurActive = false;
           
           // Only set one toggle as active based on saved settings
-          if (data.highlightEnabled && words.size > 0) {
-              isHighlightActive = true;
-              setActiveToggle("highlight");
-          } else if (data.hideEnabled && words.size > 0) {
+          if (data.hideEnabled && words.size > 0) {
               isHideActive = true;
               setActiveToggle("hide");
           } else if (data.blurEnabled && words.size > 0) {
@@ -350,13 +295,11 @@ document.addEventListener("DOMContentLoaded", () => {
               setActiveToggle("blur");
           } else {
               // Update UI to reflect no active toggles
-              highlightToggle.checked = false;
               hideToggle.checked = false;
               blurToggle.checked = false;
           }
       
           // Apply active effect if any
-          if (isHighlightActive) applyHighlight();
           if (isHideActive) applyHide();
           if (isBlurActive) applyBlur();
       });
@@ -368,20 +311,13 @@ document.addEventListener("DOMContentLoaded", () => {
       clearAllEffects();
       
       // Reset all toggle states and UI
-      isHighlightActive = false;
       isHideActive = false;
       isBlurActive = false;
-      highlightToggle.checked = false;
       hideToggle.checked = false;
       blurToggle.checked = false;
       
       // Set the specified toggle as active
       switch (activeName) {
-          case "highlight":
-              isHighlightActive = true;
-              highlightToggle.checked = true;
-              applyHighlight();
-              break;
           case "hide":
               isHideActive = true;
               hideToggle.checked = true;
@@ -430,23 +366,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function removeWord(word) {
       // remove 1 word from the list
-      findWord(word, "highlight", true);
       findWord(word, "hide", true);
       findWord(word, "blur", true);
   }
 
-  // Function to update highlighting/hiding when toggles change
-  function applyHighlight() {
-      if (isHighlightActive) {
-          words.forEach(word => {
-              findWord(word, "highlight");
-          });
-      } else {
-          words.forEach(word => {
-              findWord(word, "highlight", true);
-          });
-      }
-  }
 
   function applyHide() {
       if (isHideActive) {
@@ -475,7 +398,6 @@ document.addEventListener("DOMContentLoaded", () => {
   // Function to clear all effects
   function clearAllEffects() {
       words.forEach(word => {
-          findWord(word, "highlight", true);
           findWord(word, "hide", true);
           findWord(word, "blur", true);
       });
@@ -507,15 +429,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
   }
 
-  // Function to toggle highlighting
-  highlightToggle.addEventListener("change", () => {
-      if (highlightToggle.checked) {
-          setActiveToggle("highlight");
-      } else {
-          setActiveToggle("none");
-      }
-      console.log("Highlight active:", isHighlightActive);
-  });
 
   // Function to toggle hiding
   hideToggle.addEventListener("change", () => {
@@ -549,7 +462,6 @@ document.addEventListener("DOMContentLoaded", () => {
               saveSettings(); // Save words
       
               // Apply current active effect if any
-              if (isHighlightActive) findWord(text, "highlight");
               if (isHideActive) findWord(text, "hide");
               if (isBlurActive) findWord(text, "blur");
               

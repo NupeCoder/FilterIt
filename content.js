@@ -1,11 +1,9 @@
 // Define variables
 let words = new Set(); // Use a Set to prevent duplicates
-let isHighlightActive = false;
 let isHideActive = false;
 let isBlurActive = false;
 
 // Store observers for each word
-let highlightObservers = new Map();
 let hideObservers = new Map();
 let blurObservers = new Map();
 
@@ -75,15 +73,6 @@ function resetContent(currentTabId, word, action) {
       function undoFilter (action) {
         let elements = null;
         switch (action) {
-          case "highlight":
-            elements = Array.from(document.querySelectorAll("[filterit-tag]"));
-            elements.forEach(element => {
-              if (!element.querySelector("div") && regex.test(element.textContent)) {
-                resetChanges(element);
-                undoClose(element);
-              }
-            });
-            break;
   
           case "hide":
             elements = Array.from(document.querySelectorAll("*")).filter(el =>
@@ -116,9 +105,6 @@ function resetContent(currentTabId, word, action) {
       }
 
       switch (actionType) {
-        case "highlight":
-          undoFilter("highlight");
-          break;
 
         case "hide":
           undoFilter("hide");
@@ -175,11 +161,6 @@ function observeNewContent(currentTabId, word, action) {
                 console.log("hid nearby elements: ", element);
                 break;
 
-              case "highlight":
-                element.style.border = '2px dashed green'; // Highlighting
-                element.setAttribute("filterIt-tag", "true");
-                console.log("highlighted nearby element: ", element);
-                break;
 
               default:
                 break;
@@ -189,19 +170,6 @@ function observeNewContent(currentTabId, word, action) {
         });
       }
 
-      // Highlight function
-      function highlightText() {
-        const elements = Array.from(document.querySelectorAll("div, span, a, article, img, p"));
-        elements.forEach(element => {
-          if (!element.querySelector("div") && regex.test(element.textContent)) {
-            element.style.border = '2px solid red'; // Simple highlight
-            element.setAttribute("filterIt-tag", "true");
-            console.log("highlighted new div: ", element);
-            filterCloseElements(element, "highlight");
-            console.log("highlighted nearby elements");
-          }
-        });
-      }
 
       // Hide function
       function hideDivs() {
@@ -229,18 +197,6 @@ function observeNewContent(currentTabId, word, action) {
       }
 
       switch (actionType) {
-        case "highlight":
-          // Create a new observer for the word if it doesn't exist
-          if (!highlightObservers.has(text)) {
-            const observer = new MutationObserver(highlightText);
-            highlightObservers.set(text, observer);
-          }
-          // Activate the observer if the toggle is on
-          if (isHighlightActive) {
-            highlightObservers.get(text).observe(document.body, { childList: true, subtree: true });
-            highlightText(); // Initially highlight any matching text
-          }
-          break;
 
         case "hide":
           // Create a new observer for the word if it doesn't exist
@@ -278,7 +234,6 @@ function observeNewContent(currentTabId, word, action) {
 
 // Main code for event handling
 document.addEventListener("DOMContentLoaded", () => {
-  const highlightToggle = document.getElementById("highlight-toggle");
   const hideToggle = document.getElementById("hide-toggle");
   const blurToggle = document.getElementById("blur-toggle");
   const textBox = document.getElementById("keyword");
@@ -291,7 +246,6 @@ document.addEventListener("DOMContentLoaded", () => {
   function saveSettings() {
     chrome.storage.local.set({
       words: Array.from(words),
-      highlightEnabled: isHighlightActive,
       hideEnabled: isHideActive,
       blurEnabled: isBlurActive,
     });
@@ -299,16 +253,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Function to load saved words and toggle states
   function loadSettings() {
-    chrome.storage.local.get(["words", "highlightEnabled", "hideEnabled", "blurEnabled"], (data) => {
+    chrome.storage.local.get(["words", "hideEnabled", "blurEnabled"], (data) => {
       if (data.words) {
         words = new Set(data.words);
         updateWordListUI();
       }
 
-      if (typeof data.highlightEnabled === "boolean" && words.size > 0) {
-        isHighlightActive = data.highlightEnabled;
-        highlightToggle.checked = isHighlightActive;
-      }
       if (typeof data.hideEnabled === "boolean" && words.size > 0) {
         isHideActive = data.hideEnabled;
         hideToggle.checked = isHideActive;
@@ -319,7 +269,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       // Apply highlighting/hiding immediately if toggled on
-      if (isHighlightActive) applyHighlight();
       if (isHideActive) applyHide();
       if (isBlurActive) applyBlur();
     });
@@ -349,15 +298,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function removeWord(word) {
     // Remove the word from the list and disconnect its observers
-    findWord(word, "highlight", true);
     findWord(word, "hide", true);
     findWord(word, "blur", true);
 
     // Disconnect and remove observers for the word
-    if (highlightObservers.has(word)) {
-      highlightObservers.get(word).disconnect();
-      highlightObservers.delete(word);
-    }
+
     if (hideObservers.has(word)) {
       hideObservers.get(word).disconnect();
       hideObservers.delete(word);
@@ -369,17 +314,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Function to update highlighting/hiding when toggles change
-  function applyHighlight() {
-    if (isHighlightActive) {
-      words.forEach(word => {
-        findWord(word, "highlight");
-      });
-    } else {
-      words.forEach(word => {
-        findWord(word, "highlight", true);
-      });
-    }
-  }
 
   function applyHide() {
     if (isHideActive) {
@@ -405,18 +339,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Function to toggle highlighting
-  highlightToggle.addEventListener("change", () => {
-    isHighlightActive = highlightToggle.checked;
-    saveSettings(); // Save state
-    if (isHighlightActive) {
-      applyHighlight();
-      console.log("switch checked: ", isHighlightActive);
-    } else {
-      words.forEach(word => findWord(word, "highlight", true));
-      console.log("unchecked switch");
-    }
-  });
 
   // Function to toggle hiding
   hideToggle.addEventListener("change", () => {
@@ -429,20 +351,6 @@ document.addEventListener("DOMContentLoaded", () => {
       words.forEach(word => findWord(word, "hide", true));
       console.log("unchecked switch");
     }
-  });
-
-  // Function to toggle highlighting
-  blurToggle.addEventListener("change", () => {
-    isBlurActive = blurToggle.checked;
-    saveSettings(); // Save state
-    console.log("switch checked: ", isBlurActive);
-    if (isBlurActive){
-        applyBlur();
-    } else {
-        words.forEach(word => findWord(word, "blur", true));
-        console.log("unchecked switch");
-    }
-    
   });
 
 
@@ -458,7 +366,6 @@ document.addEventListener("DOMContentLoaded", () => {
               saveSettings(); // Save words
       
           // Apply highlight or hide immediately if toggled on
-          if (isHighlightActive) findWord(text, "highlight");
           if (isHideActive) findWord(text, "hide");
           if (isBlurActive) findWord(text, "blur");
           }
