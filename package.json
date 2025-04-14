@@ -1,0 +1,24 @@
+{
+  "name": "filterit",
+  "version": "1.0.0",
+  "description": "FYP Web Filter Extension",
+  "main": "background.js",
+  "scripts": {
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NupeCoder/FilterIt.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/NupeCoder/FilterIt/issues"
+  },
+  "homepage": "https://github.com/NupeCoder/FilterIt#readme",
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "puppeteer": "^24.6.1"
+  }
+}
