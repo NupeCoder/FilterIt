@@ -1,3 +1,16 @@
+
+function sendToContentScript(word, action, reset = false) {
+  chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+    if (tabs.length > 0) {
+      chrome.tabs.sendMessage(tabs[0].id, {
+        type: reset ? "RESET_WORD" : "FILTER_WORD",
+        word,
+        action
+      });
+    }
+  });
+}
+
 // Define variables
 let words = new Set(); // Use a Set to prevent duplicates
 let isHideActive = false;
@@ -8,7 +21,7 @@ let hideObservers = new Map();
 let blurObservers = new Map();
 
 // Find target word from input textbox
-function findWord(word, action, reset=false) {
+function sendToContentScript(word, action, reset=false) {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     if (tabs.length > 0) {
       const currentTab = tabs[0]; // The current active tab
@@ -366,19 +379,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function removeWord(word) {
       // remove 1 word from the list
-      findWord(word, "hide", true);
-      findWord(word, "blur", true);
+      sendToContentScript(word, "hide", true);
+      sendToContentScript(word, "blur", true);
   }
 
 
   function applyHide() {
       if (isHideActive) {
           words.forEach(word => {
-              findWord(word, "hide");
+              sendToContentScript(word, "hide");
           });
       } else {
           words.forEach(word => {
-              findWord(word, "hide", true);
+              sendToContentScript(word, "hide", true);
           });
       }
   }
@@ -386,11 +399,11 @@ document.addEventListener("DOMContentLoaded", () => {
   function applyBlur() {
       if (isBlurActive) {
           words.forEach(word => {
-              findWord(word, "blur");
+              sendToContentScript(word, "blur");
           });
       } else {
           words.forEach(word => {
-              findWord(word, "blur", true);
+              sendToContentScript(word, "blur", true);
           });
       }
   }
@@ -398,8 +411,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // Function to clear all effects
   function clearAllEffects() {
       words.forEach(word => {
-          findWord(word, "hide", true);
-          findWord(word, "blur", true);
+          sendToContentScript(word, "hide", true);
+          sendToContentScript(word, "blur", true);
       });
   }
 
@@ -462,8 +475,8 @@ document.addEventListener("DOMContentLoaded", () => {
               saveSettings(); // Save words
       
               // Apply current active effect if any
-              if (isHideActive) findWord(text, "hide");
-              if (isBlurActive) findWord(text, "blur");
+              if (isHideActive) sendToContentScript(text, "hide");
+              if (isBlurActive) sendToContentScript(text, "blur");
               
               // Show success alert
               alert(`"${text}" has been added to your word list.`);
