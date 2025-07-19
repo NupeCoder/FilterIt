@@ -3,6 +3,11 @@
 ## **Overview** 🗒️
 FilterIt is a Chrome extension that allows users to filter specific sections on webpages that match input words. This extension runs locally on your browser and does not require installation from the Chrome Web Store. Below are instruction on how to get it running, how to remove it and also a feedback form.
 
+<img width="934" height="518" alt="Screenshot 2025-07-02 at 14 59 33" src="https://github.com/user-attachments/assets/a2fe077b-bc08-4368-9d15-c1889e01cbc4" />
+
+<img width="980" height="518" alt="Screenshot 2025-07-02 at 14 58 05" src="https://github.com/user-attachments/assets/c94f365d-2823-4593-828f-3f4db92a45b8" />
+
+
 ---
 
 ## **Installation Instructions** 📖
